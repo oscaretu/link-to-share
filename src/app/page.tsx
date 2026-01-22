@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import PreviewCard from '@/components/PreviewCard';
@@ -22,6 +22,7 @@ function HomeContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showBookmarklet, setShowBookmarklet] = useState(false);
+  const bookmarkletRef = useRef<HTMLAnchorElement>(null);
 
   const extractData = useCallback(async (url: string) => {
     setLoading(true);
@@ -91,6 +92,12 @@ function HomeContent() {
   };
 
   const bookmarkletCode = `javascript:(function(){const currentUrl=encodeURIComponent(window.location.href);const appUrl='${typeof window !== 'undefined' ? window.location.origin : ''}';window.open(appUrl+'?url='+currentUrl,'ShareLink','width=500,height=700,menubar=no,toolbar=no,location=no');})();`;
+
+  useEffect(() => {
+    if (showBookmarklet && bookmarkletRef.current) {
+      bookmarkletRef.current.href = bookmarkletCode;
+    }
+  }, [showBookmarklet, bookmarkletCode]);
 
   const copyBookmarklet = async () => {
     try {
@@ -168,9 +175,9 @@ function HomeContent() {
               </p>
 
               <a
-                href={bookmarkletCode}
+                ref={bookmarkletRef}
                 onClick={(e) => e.preventDefault()}
-                className="block w-full text-center bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+                className="block w-full text-center bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors cursor-grab"
                 draggable
               >
                 Share Link
