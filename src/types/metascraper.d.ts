@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'metascraper' {
   interface MetascraperOptions {
     html: string;
@@ -13,34 +14,32 @@ declare module 'metascraper' {
     [key: string]: string | undefined;
   }
 
-  type MetascraperRule = () => Record<string, unknown>;
-
-  function metascraper(rules: MetascraperRule[]): (options: MetascraperOptions) => Promise<MetascraperResult>;
+  function metascraper(rules: any[]): (options: MetascraperOptions) => Promise<MetascraperResult>;
 
   export default metascraper;
 }
 
 declare module 'metascraper-title' {
-  function metascraperTitle(): Record<string, unknown>;
+  const metascraperTitle: () => any;
   export default metascraperTitle;
 }
 
 declare module 'metascraper-description' {
-  function metascraperDescription(): Record<string, unknown>;
+  const metascraperDescription: () => any;
   export default metascraperDescription;
 }
 
 declare module 'metascraper-image' {
-  function metascraperImage(): Record<string, unknown>;
+  const metascraperImage: () => any;
   export default metascraperImage;
 }
 
 declare module 'metascraper-url' {
-  function metascraperUrl(): Record<string, unknown>;
+  const metascraperUrl: () => any;
   export default metascraperUrl;
 }
 
 declare module 'metascraper-author' {
-  function metascraperAuthor(): Record<string, unknown>;
+  const metascraperAuthor: () => any;
   export default metascraperAuthor;
 }
