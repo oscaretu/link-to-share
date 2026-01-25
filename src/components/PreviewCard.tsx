@@ -26,7 +26,6 @@ export default function PreviewCard({
   const [editDescription, setEditDescription] = useState(description);
   const [editUrl, setEditUrl] = useState(url);
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState(false);
   const [format, setFormat] = useState<FormatType>('whatsapp');
 
   const formatTitle = (text: string, fmt: FormatType) => {
@@ -42,26 +41,6 @@ export default function PreviewCard({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       alert('Failed to copy to clipboard');
-    }
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: editTitle,
-          text: `${editDescription}\n`,
-          url: editUrl,
-        });
-        setShared(true);
-        setTimeout(() => setShared(false), 2000);
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          alert('Failed to share');
-        }
-      }
-    } else {
-      handleCopy();
     }
   };
 
@@ -209,26 +188,16 @@ export default function PreviewCard({
               </pre>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="pt-2">
               <button
                 onClick={handleCopy}
-                className={`flex-1 py-2 px-4 rounded-lg transition-colors font-medium ${
+                className={`w-full py-2 px-4 rounded-lg transition-colors font-medium ${
                   copied
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-900 text-white hover:bg-gray-800'
                 }`}
               >
                 {copied ? 'Copied!' : 'Copy Text'}
-              </button>
-              <button
-                onClick={handleShare}
-                className={`flex-1 py-2 px-4 rounded-lg transition-colors font-medium ${
-                  shared
-                    ? 'bg-green-600 text-white'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {shared ? 'Shared!' : 'Share'}
               </button>
             </div>
 
