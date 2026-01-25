@@ -10,6 +10,7 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - **Data Extraction:** `metascraper`, `metascraper-title`, `metascraper-description`, `metascraper-image`, `metascraper-url`, `metascraper-author`.
 - **HTML Parsing:** `cheerio` (for extracting longer descriptions from article body)
 - **Deployment:** Vercel (recommended for API routes).
+- **Testing:** Jest + React Testing Library
 - **Language:** Spanish (all UI text is in Spanish)
 
 ## Core Requirements
@@ -55,3 +56,14 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - `/src/components/PreviewCard.tsx` -> Visual representation of the link with format selector.
 - `/src/lib/scraper.ts` -> Metascraper configuration + cheerio extraction for longer descriptions.
 - `/src/lib/version.ts` -> App version constant.
+- `/src/__tests__/` -> Test files.
+
+## Testing
+
+Run tests with `npm test` or `npm run test:watch` for watch mode.
+
+Test suites:
+- **PreviewCard.test.tsx**: Component rendering, format switching, edit mode, clipboard copy.
+- **scraper.test.ts**: User-Agent format, CSS selectors, URL validation, text formatting.
+- **api-extract.test.ts**: URL validation, API response structure.
+- **version.test.ts**: Version format validation.
