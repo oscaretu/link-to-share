@@ -32,7 +32,7 @@ export default function PreviewCard({
     return fmt === 'whatsapp' ? `*${text}*` : `**${text}**`;
   };
 
-  const formattedText = `${formatTitle(editTitle, format)}\n${editDescription}\n${editUrl}`;
+  const formattedText = `${formatTitle(editTitle, format)}\n\n${editDescription}\n\n${editUrl}`;
 
   const handleCopy = async () => {
     try {
