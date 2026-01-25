@@ -8,6 +8,7 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - **Framework:** Next.js (App Router)
 - **Styling:** Tailwind CSS
 - **Data Extraction:** `metascraper`, `metascraper-title`, `metascraper-description`, `metascraper-image`, `metascraper-url`, `metascraper-author`.
+- **HTML Parsing:** `cheerio` (for extracting longer descriptions from article body)
 - **Deployment:** Vercel (recommended for API routes).
 
 ## Core Requirements
@@ -18,14 +19,17 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
     - Use `fetch` with a realistic User-Agent to get the HTML.
     - Use `metascraper` to parse: Title, Subtitle (Description), Canonical URL, and Hero Image.
 - **UI/UX:**
+    - Display version number in header: "Link to Share (x.x.x)"
     - Display a "Card Preview" of the link.
-    - Provide a "Copy Formatted Text" button that generates:
+    - Provide format selector (radio buttons) for WhatsApp or Telegram bold formatting.
+    - Provide a "Copy Text" button that generates formatted text with blank line separators:
       ```
-      *Title*
+      *Title* (WhatsApp) or **Title** (Telegram)
+
       Subtitle
+
       Link
       ```
-    - Provide a "Share" button using the `navigator.share` API.
     - Ensure the image is displayed and easy to save/copy.
 
 ### 2. Bookmarklet Generation
@@ -41,11 +45,12 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 
 - **CORS/User-Agent:** When fetching the target URL, use a realistic User-Agent header (like a Chrome browser) to avoid being blocked by sites like Amazon or Medium.
 - **Error Handling:** If a URL is invalid or the site blocks scraping, show a manual entry form pre-filled with whatever data was possible to find.
-- **Markdown Support:** Ensure the "Copy" function formats text specifically for WhatsApp (uses `*bold*`) and Telegram (supports Markdown/HTML).
+- **Markdown Support:** The format selector allows choosing between WhatsApp (`*bold*`) and Telegram (`**bold**`) formatting for the title.
 
-## File Structure Suggestion
+## File Structure
 
-- `/app/api/extract/route.ts` -> Logic for fetching and scraping.
-- `/app/page.tsx` -> Main UI and state management for the preview.
-- `/components/PreviewCard.tsx` -> Visual representation of the link.
-- `/lib/scraper.ts` -> Metascraper configuration.
+- `/src/app/api/extract/route.ts` -> Logic for fetching and scraping.
+- `/src/app/page.tsx` -> Main UI and state management for the preview.
+- `/src/components/PreviewCard.tsx` -> Visual representation of the link with format selector.
+- `/src/lib/scraper.ts` -> Metascraper configuration + cheerio extraction for longer descriptions.
+- `/src/lib/version.ts` -> App version constant.
