@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "metascraper": "^5.49.17",
     "metascraper-author": "^5.49.17",
     "metascraper-description": "^5.49.17",
@@ -16,6 +17,7 @@
     "metascraper-title": "^5.49.17",
     "metascraper-url": "^5.49.17",
     "next": "16.1.4",
+    "normalize-url": "^8.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
