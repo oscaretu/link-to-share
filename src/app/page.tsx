@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import PreviewCard from '@/components/PreviewCard';
+import { APP_VERSION } from '@/lib/version';
 
 interface LinkData {
   title: string;
@@ -112,7 +113,9 @@ function HomeContent() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-md mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Link to Share</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Link to Share <span className="text-sm font-normal text-gray-400">({APP_VERSION})</span>
+          </h1>
           <p className="text-gray-600 mt-1">
             Extract and format links for WhatsApp & Telegram
           </p>

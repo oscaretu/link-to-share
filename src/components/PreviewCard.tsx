@@ -11,6 +11,8 @@ interface PreviewCardProps {
   onEdit: (data: { title: string; description: string; url: string }) => void;
 }
 
+type FormatType = 'whatsapp' | 'telegram';
+
 export default function PreviewCard({
   title,
   description,
@@ -24,9 +26,13 @@ export default function PreviewCard({
   const [editDescription, setEditDescription] = useState(description);
   const [editUrl, setEditUrl] = useState(url);
   const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState(false);
+  const [format, setFormat] = useState<FormatType>('whatsapp');
 
-  const formattedText = `*${editTitle}*\n${editDescription}\n${editUrl}`;
+  const formatTitle = (text: string, fmt: FormatType) => {
+    return fmt === 'whatsapp' ? `*${text}*` : `**${text}**`;
+  };
+
+  const formattedText = `${formatTitle(editTitle, format)}\n${editDescription}\n${editUrl}`;
 
   const handleCopy = async () => {
     try {
@@ -35,26 +41,6 @@ export default function PreviewCard({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       alert('Failed to copy to clipboard');
-    }
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: editTitle,
-          text: `${editDescription}\n`,
-          url: editUrl,
-        });
-        setShared(true);
-        setTimeout(() => setShared(false), 2000);
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          alert('Failed to share');
-        }
-      }
-    } else {
-      handleCopy();
     }
   };
 
@@ -171,32 +157,47 @@ export default function PreviewCard({
             </a>
 
             <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center gap-4 mb-2">
+                <span className="text-xs text-gray-400">Format:</span>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="format"
+                    value="whatsapp"
+                    checked={format === 'whatsapp'}
+                    onChange={() => setFormat('whatsapp')}
+                    className="text-blue-600"
+                  />
+                  <span className="text-sm text-gray-700">WhatsApp</span>
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="format"
+                    value="telegram"
+                    checked={format === 'telegram'}
+                    onChange={() => setFormat('telegram')}
+                    className="text-blue-600"
+                  />
+                  <span className="text-sm text-gray-700">Telegram</span>
+                </label>
+              </div>
               <p className="text-xs text-gray-400 mb-2">Preview text:</p>
               <pre className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 whitespace-pre-wrap font-mono">
                 {formattedText}
               </pre>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="pt-2">
               <button
                 onClick={handleCopy}
-                className={`flex-1 py-2 px-4 rounded-lg transition-colors font-medium ${
+                className={`w-full py-2 px-4 rounded-lg transition-colors font-medium ${
                   copied
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-900 text-white hover:bg-gray-800'
                 }`}
               >
                 {copied ? 'Copied!' : 'Copy Text'}
-              </button>
-              <button
-                onClick={handleShare}
-                className={`flex-1 py-2 px-4 rounded-lg transition-colors font-medium ${
-                  shared
-                    ? 'bg-green-600 text-white'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {shared ? 'Shared!' : 'Share'}
               </button>
             </div>
 
