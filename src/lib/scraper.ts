@@ -16,6 +16,10 @@ const scraper = metascraper([
 
 // Selectors for article intro/lead paragraphs (in priority order)
 const LEAD_SELECTORS = [
+  // Common article body paragraph classes
+  'p.paragraph:first-of-type',
+  '.paragraph:first-of-type',
+  // Intro/lead classes
   'article header p',
   '.article-intro',
   '.article__intro',
@@ -26,11 +30,17 @@ const LEAD_SELECTORS = [
   '.subtitle',
   '.article-subtitle',
   '.article__subtitle',
+  '.entradilla',
+  '.sumario',
+  '.excerpt',
   '[itemprop="description"]',
+  '[itemprop="articleBody"] > p:first-of-type',
   'article > p:first-of-type',
   '.content > p:first-of-type',
   '.article-body > p:first-of-type',
   '.article__body > p:first-of-type',
+  '.story-body > p:first-of-type',
+  '.post-content > p:first-of-type',
 ];
 
 function extractLongDescription(html: string, metaDescription: string | null): string | null {
