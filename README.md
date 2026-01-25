@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Link to Share
 
-## Getting Started
+Aplicación web para extraer y formatear enlaces de artículos web para compartir en WhatsApp y Telegram.
 
-First, run the development server:
+## Características
+
+- Extrae título, descripción, imagen y autor de cualquier URL
+- Selector de formato: WhatsApp (`*negrita*`) o Telegram (`**negrita**`)
+- Texto de salida con separadores visuales
+- Bookmarklet para compartir desde cualquier página
+- Edición manual de los campos extraídos
+- Interfaz en español
+
+## Requisitos
+
+- Node.js 18 o superior
+- npm
+
+## Instalación
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/link-to-share.git
+cd link-to-share
+
+# Instalar dependencias
+npm install
+```
+
+## Comandos
+
+### Desarrollo
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Inicia el servidor de desarrollo en `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Producción
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Compilar la aplicación
+npm run build
 
-## Learn More
+# Iniciar servidor de producción
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Tests
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Ejecutar tests una vez
+npm test
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Ejecutar tests en modo watch
+npm run test:watch
+```
 
-## Deploy on Vercel
+### Linting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Uso
+
+### Desde la web
+
+1. Accede a `http://localhost:3000`
+2. Introduce una URL en el campo de texto
+3. Pulsa "Extraer datos del enlace"
+4. Selecciona el formato (WhatsApp o Telegram)
+5. Pulsa "Copiar Texto" y pega en tu app de mensajería
+
+### Con parámetro URL
+
+Puedes pasar la URL directamente:
+
+```
+http://localhost:3000/?url=https://ejemplo.com/articulo
+```
+
+### Bookmarklet
+
+1. En la aplicación, expande "Configuración del Bookmarklet"
+2. Arrastra el botón "Compartir Enlace" a tu barra de marcadores
+3. En cualquier página web, pulsa el bookmarklet para abrir la aplicación con esa URL
+
+## Estructura del proyecto
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   └── extract/
+│   │       └── route.ts    # API de extracción
+│   └── page.tsx            # Página principal
+├── components/
+│   └── PreviewCard.tsx     # Componente de previsualización
+├── lib/
+│   ├── scraper.ts          # Lógica de scraping
+│   └── version.ts          # Versión de la app
+└── __tests__/              # Tests
+```
+
+## Tecnologías
+
+- [Next.js](https://nextjs.org/) - Framework React
+- [Tailwind CSS](https://tailwindcss.com/) - Estilos
+- [Metascraper](https://metascraper.js.org/) - Extracción de metadatos
+- [Cheerio](https://cheerio.js.org/) - Parsing HTML
+- [Jest](https://jestjs.io/) - Tests
+- [React Testing Library](https://testing-library.com/react) - Tests de componentes
+
+## Despliegue
+
+La forma más sencilla de desplegar es usar [Vercel](https://vercel.com/):
+
+```bash
+npm install -g vercel
+vercel
+```
+
+## Licencia
+
+MIT
