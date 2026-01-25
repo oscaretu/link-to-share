@@ -40,7 +40,7 @@ export default function PreviewCard({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert('Failed to copy to clipboard');
+      alert('Error al copiar al portapapeles');
     }
   };
 
@@ -78,7 +78,7 @@ export default function PreviewCard({
             rel="noopener noreferrer"
             className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded hover:bg-black/90 transition-colors"
           >
-            Open image
+            Abrir imagen
           </a>
         </div>
       )}
@@ -88,7 +88,7 @@ export default function PreviewCard({
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title
+                Título
               </label>
               <input
                 type="text"
@@ -99,7 +99,7 @@ export default function PreviewCard({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                Descripción
               </label>
               <textarea
                 value={editDescription}
@@ -124,13 +124,13 @@ export default function PreviewCard({
                 onClick={handleSaveEdit}
                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                Save
+                Guardar
               </button>
               <button
                 onClick={handleCancelEdit}
                 className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function PreviewCard({
                 {editTitle}
               </h2>
               {author && (
-                <p className="text-sm text-gray-500 mt-1">by {author}</p>
+                <p className="text-sm text-gray-500 mt-1">por {author}</p>
               )}
             </div>
 
@@ -158,7 +158,7 @@ export default function PreviewCard({
 
             <div className="pt-2 border-t border-gray-100">
               <div className="flex items-center gap-4 mb-2">
-                <span className="text-xs text-gray-400">Format:</span>
+                <span className="text-xs text-gray-400">Formato:</span>
                 <label className="flex items-center gap-1 cursor-pointer">
                   <input
                     type="radio"
@@ -182,7 +182,7 @@ export default function PreviewCard({
                   <span className="text-sm text-gray-700">Telegram</span>
                 </label>
               </div>
-              <p className="text-xs text-gray-400 mb-2">Preview text:</p>
+              <p className="text-xs text-gray-400 mb-2">Texto de salida:</p>
               <pre className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700 whitespace-pre-wrap font-mono">
                 {formattedText}
               </pre>
@@ -197,7 +197,7 @@ export default function PreviewCard({
                     : 'bg-gray-900 text-white hover:bg-gray-800'
                 }`}
               >
-                {copied ? 'Copied!' : 'Copy Text'}
+                {copied ? '¡Copiado!' : 'Copiar Texto'}
               </button>
             </div>
 
@@ -205,7 +205,7 @@ export default function PreviewCard({
               onClick={() => setIsEditing(true)}
               className="w-full text-sm text-gray-500 hover:text-gray-700 py-1"
             >
-              Edit details
+              Editar detalles
             </button>
           </>
         )}

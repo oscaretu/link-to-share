@@ -36,19 +36,19 @@ function HomeContent() {
       if (!response.ok) {
         if (data.partial) {
           setLinkData({
-            title: data.partial.title || 'Untitled',
+            title: data.partial.title || 'Sin título',
             description: data.partial.description || '',
             image: data.partial.image,
             url: data.partial.url || url,
             author: data.partial.author,
           });
-          setError(`Could not fully extract data: ${data.error}. You can edit the fields manually.`);
+          setError(`No se pudieron extraer todos los datos: ${data.error}. Puedes editar los campos manualmente.`);
         } else {
-          throw new Error(data.error || 'Failed to extract data');
+          throw new Error(data.error || 'Error al extraer los datos');
         }
       } else {
         setLinkData({
-          title: data.title || 'Untitled',
+          title: data.title || 'Sin título',
           description: data.description || '',
           image: data.image,
           url: data.url || url,
@@ -56,9 +56,9 @@ function HomeContent() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Ha ocurrido un error');
       setLinkData({
-        title: 'Untitled',
+        title: 'Sin título',
         description: '',
         image: null,
         url: url,
@@ -103,9 +103,9 @@ function HomeContent() {
   const copyBookmarklet = async () => {
     try {
       await navigator.clipboard.writeText(bookmarkletCode);
-      alert('Bookmarklet code copied! Create a new bookmark and paste this code as the URL.');
+      alert('¡Código copiado! Crea un nuevo marcador y pega este código como URL.');
     } catch {
-      alert('Failed to copy. Please select and copy the code manually.');
+      alert('Error al copiar. Por favor, selecciona y copia el código manualmente.');
     }
   };
 
@@ -117,7 +117,7 @@ function HomeContent() {
             Link to Share <span className="text-sm font-normal text-gray-400">({APP_VERSION})</span>
           </h1>
           <p className="text-gray-600 mt-1">
-            Extract and format links for WhatsApp & Telegram
+            Extrae y formatea enlaces para WhatsApp y Telegram
           </p>
         </div>
 
@@ -126,7 +126,7 @@ function HomeContent() {
             type="url"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
-            placeholder="Enter URL to extract..."
+            placeholder="Introduce una URL..."
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
             required
           />
@@ -135,7 +135,7 @@ function HomeContent() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Extracting...' : 'Extract Link Data'}
+            {loading ? 'Extrayendo...' : 'Extraer datos del enlace'}
           </button>
         </form>
 
@@ -167,14 +167,14 @@ function HomeContent() {
             onClick={() => setShowBookmarklet(!showBookmarklet)}
             className="w-full text-left flex items-center justify-between text-gray-700 hover:text-gray-900"
           >
-            <span className="font-medium">Bookmarklet Setup</span>
+            <span className="font-medium">Configuración del Bookmarklet</span>
             <span className="text-xl">{showBookmarklet ? '−' : '+'}</span>
           </button>
 
           {showBookmarklet && (
             <div className="mt-4 space-y-3">
               <p className="text-sm text-gray-600">
-                Drag this link to your bookmarks bar, or copy the code below:
+                Arrastra este enlace a tu barra de marcadores, o copia el código de abajo:
               </p>
 
               <a
@@ -183,7 +183,7 @@ function HomeContent() {
                 className="block w-full text-center bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors cursor-grab"
                 draggable
               >
-                Share Link
+                Compartir Enlace
               </a>
 
               <div className="bg-gray-100 rounded-lg p-3">
@@ -196,16 +196,16 @@ function HomeContent() {
                 onClick={copyBookmarklet}
                 className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm"
               >
-                Copy Bookmarklet Code
+                Copiar Código del Bookmarklet
               </button>
 
               <div className="text-xs text-gray-500 space-y-1">
-                <p><strong>Instructions:</strong></p>
+                <p><strong>Instrucciones:</strong></p>
                 <ol className="list-decimal list-inside space-y-1">
-                  <li>Drag the &quot;Share Link&quot; button to your bookmarks bar</li>
-                  <li>Or create a new bookmark manually</li>
-                  <li>Paste the copied code as the bookmark URL</li>
-                  <li>Click the bookmark on any page to share it</li>
+                  <li>Arrastra el botón &quot;Compartir Enlace&quot; a tu barra de marcadores</li>
+                  <li>O crea un nuevo marcador manualmente</li>
+                  <li>Pega el código copiado como URL del marcador</li>
+                  <li>Haz clic en el marcador en cualquier página para compartirla</li>
                 </ol>
               </div>
             </div>

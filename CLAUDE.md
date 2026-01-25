@@ -10,6 +10,7 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - **Data Extraction:** `metascraper`, `metascraper-title`, `metascraper-description`, `metascraper-image`, `metascraper-url`, `metascraper-author`.
 - **HTML Parsing:** `cheerio` (for extracting longer descriptions from article body)
 - **Deployment:** Vercel (recommended for API routes).
+- **Language:** Spanish (all UI text is in Spanish)
 
 ## Core Requirements
 
