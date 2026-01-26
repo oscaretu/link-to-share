@@ -1,25 +1,19 @@
-import metascraper from 'metascraper';
-import metascraperTitle from 'metascraper-title';
-import metascraperDescription from 'metascraper-description';
-import metascraperImage from 'metascraper-image';
-import metascraperUrl from 'metascraper-url';
-import metascraperAuthor from 'metascraper-author';
 import * as cheerio from 'cheerio';
 
-const scraper = metascraper([
-  metascraperTitle(),
-  metascraperDescription(),
-  metascraperImage(),
-  metascraperUrl(),
-  metascraperAuthor(),
-]);
+export interface ScrapedData {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  url: string | null;
+  author: string | null;
+}
+
+const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 // Selectors for article intro/lead paragraphs (in priority order)
 const LEAD_SELECTORS = [
-  // Common article body paragraph classes
   'p.paragraph:first-of-type',
   '.paragraph:first-of-type',
-  // Intro/lead classes
   'article header p',
   '.article-intro',
   '.article__intro',
@@ -43,9 +37,43 @@ const LEAD_SELECTORS = [
   '.post-content > p:first-of-type',
 ];
 
-function extractLongDescription(html: string, metaDescription: string | null): string | null {
-  const $ = cheerio.load(html);
+function extractTitle($: cheerio.CheerioAPI): string | null {
+  // Try Open Graph title first
+  const ogTitle = $('meta[property="og:title"]').attr('content');
+  if (ogTitle) return ogTitle.trim();
 
+  // Try Twitter title
+  const twitterTitle = $('meta[name="twitter:title"]').attr('content');
+  if (twitterTitle) return twitterTitle.trim();
+
+  // Try standard title tag
+  const title = $('title').text();
+  if (title) return title.trim();
+
+  // Try h1
+  const h1 = $('h1').first().text();
+  if (h1) return h1.trim();
+
+  return null;
+}
+
+function extractDescription($: cheerio.CheerioAPI): string | null {
+  // Try Open Graph description
+  const ogDesc = $('meta[property="og:description"]').attr('content');
+  if (ogDesc) return ogDesc.trim();
+
+  // Try Twitter description
+  const twitterDesc = $('meta[name="twitter:description"]').attr('content');
+  if (twitterDesc) return twitterDesc.trim();
+
+  // Try standard meta description
+  const metaDesc = $('meta[name="description"]').attr('content');
+  if (metaDesc) return metaDesc.trim();
+
+  return null;
+}
+
+function extractLongDescription($: cheerio.CheerioAPI, metaDescription: string | null): string | null {
   // Try each selector to find a longer description
   for (const selector of LEAD_SELECTORS) {
     const element = $(selector).first();
@@ -57,19 +85,59 @@ function extractLongDescription(html: string, metaDescription: string | null): s
       }
     }
   }
+  return null;
+}
+
+function extractImage($: cheerio.CheerioAPI): string | null {
+  // Try Open Graph image
+  const ogImage = $('meta[property="og:image"]').attr('content');
+  if (ogImage) return ogImage;
+
+  // Try Twitter image
+  const twitterImage = $('meta[name="twitter:image"]').attr('content');
+  if (twitterImage) return twitterImage;
+
+  // Try first article image
+  const articleImage = $('article img').first().attr('src');
+  if (articleImage) return articleImage;
 
   return null;
 }
 
-export interface ScrapedData {
-  title: string | null;
-  description: string | null;
-  image: string | null;
-  url: string | null;
-  author: string | null;
+function extractAuthor($: cheerio.CheerioAPI): string | null {
+  // Try Open Graph author
+  const ogAuthor = $('meta[property="article:author"]').attr('content');
+  if (ogAuthor) return ogAuthor.trim();
+
+  // Try meta author
+  const metaAuthor = $('meta[name="author"]').attr('content');
+  if (metaAuthor) return metaAuthor.trim();
+
+  // Try schema.org author
+  const schemaAuthor = $('[itemprop="author"]').first().text();
+  if (schemaAuthor) return schemaAuthor.trim();
+
+  // Try common author class names
+  const authorSelectors = ['.author', '.byline', '.author-name', '[rel="author"]'];
+  for (const selector of authorSelectors) {
+    const author = $(selector).first().text();
+    if (author) return author.trim();
+  }
+
+  return null;
 }
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+function extractCanonicalUrl($: cheerio.CheerioAPI, originalUrl: string): string {
+  // Try canonical link
+  const canonical = $('link[rel="canonical"]').attr('href');
+  if (canonical) return canonical;
+
+  // Try Open Graph URL
+  const ogUrl = $('meta[property="og:url"]').attr('content');
+  if (ogUrl) return ogUrl;
+
+  return originalUrl;
+}
 
 export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
   const response = await fetch(targetUrl, {
@@ -88,16 +156,16 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
   }
 
   const html = await response.text();
-  const metadata = await scraper({ html, url: targetUrl });
+  const $ = cheerio.load(html);
 
-  // Try to get a longer description from article content
-  const longDescription = extractLongDescription(html, metadata.description || null);
+  const metaDescription = extractDescription($);
+  const longDescription = extractLongDescription($, metaDescription);
 
   return {
-    title: metadata.title || null,
-    description: longDescription || metadata.description || null,
-    image: metadata.image || null,
-    url: metadata.url || targetUrl,
-    author: metadata.author || null,
+    title: extractTitle($),
+    description: longDescription || metaDescription,
+    image: extractImage($),
+    url: extractCanonicalUrl($, targetUrl),
+    author: extractAuthor($),
   };
 }
