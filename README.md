@@ -144,6 +144,13 @@ npm install -g vercel
 vercel
 ```
 
+## Documentación
+
+Puedes analizar este repositorio con inteligencia artificial en:
+
+- **Zread.ai**: https://zread.ai/oscaretu/link-to-share
+- **DeepWiki.com**: https://deepwiki.com/oscaretu/link-to-share
+
 ## Licencia
 
 MIT

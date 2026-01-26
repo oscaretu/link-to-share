@@ -1,16 +1,40 @@
+/**
+ * scraper.ts - Módulo de extracción de metadatos de URLs
+ *
+ * Este módulo proporciona funcionalidad para extraer información relevante
+ * de páginas web (título, descripción, imagen, autor y URL canónica).
+ *
+ * Incluye extractores especializados para:
+ * - YouTube: Usa la API oEmbed para evitar problemas de autenticación
+ * - Amazon: Usa selectores específicos del DOM de Amazon (12 países soportados)
+ * - Sitios genéricos: Usa metadatos Open Graph, Twitter Cards y meta tags estándar
+ */
+
 import * as cheerio from 'cheerio';
 
+/**
+ * Interfaz que define la estructura de los datos extraídos de una URL.
+ * Todos los campos pueden ser null si no se encuentra la información.
+ */
 export interface ScrapedData {
-  title: string | null;
-  description: string | null;
-  image: string | null;
-  url: string | null;
-  author: string | null;
+  title: string | null;       // Título de la página o producto
+  description: string | null; // Descripción o resumen del contenido
+  image: string | null;       // URL de la imagen principal o thumbnail
+  url: string | null;         // URL canónica de la página
+  author: string | null;      // Autor del artículo o marca del producto
 }
 
+/**
+ * User-Agent que simula un navegador Chrome moderno.
+ * Esto es necesario porque muchos sitios bloquean requests de bots.
+ */
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
-// Headers that better simulate a real browser
+/**
+ * Headers HTTP que simulan una petición de navegador real.
+ * Incluye headers Sec-Ch-Ua y Sec-Fetch-* que los navegadores modernos envían.
+ * Esto ayuda a evitar bloqueos por detección de bots en sitios como Amazon.
+ */
 const BROWSER_HEADERS = {
   'User-Agent': USER_AGENT,
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -19,20 +43,110 @@ const BROWSER_HEADERS = {
   'Cache-Control': 'max-age=0',
   'Connection': 'keep-alive',
   'Upgrade-Insecure-Requests': '1',
+  // Headers de Client Hints que Chrome envía
   'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
   'Sec-Ch-Ua-Mobile': '?0',
   'Sec-Ch-Ua-Platform': '"Windows"',
+  // Headers Sec-Fetch que indican el contexto de la petición
   'Sec-Fetch-Dest': 'document',
   'Sec-Fetch-Mode': 'navigate',
   'Sec-Fetch-Site': 'none',
   'Sec-Fetch-User': '?1',
 };
 
-// Check if URL is from Amazon
+// ============================================================================
+// EXTRACTOR DE YOUTUBE
+// ============================================================================
+
+/**
+ * Comprueba si una URL pertenece a YouTube.
+ * Soporta tanto youtube.com como youtu.be (enlaces cortos).
+ *
+ * @param url - URL a comprobar
+ * @returns true si es una URL de YouTube, false en caso contrario
+ */
+function isYouTubeUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    // Coincide con youtube.com, www.youtube.com y youtu.be
+    return /^(www\.)?(youtube\.com|youtu\.be)$/i.test(hostname);
+  } catch {
+    // Si la URL es inválida, retorna false
+    return false;
+  }
+}
+
+/**
+ * Extrae datos de un vídeo de YouTube usando la API oEmbed.
+ *
+ * La API oEmbed es pública y no requiere autenticación, lo que la hace
+ * ideal para servidores donde no hay sesión de usuario de YouTube.
+ * Esta es la solución al problema de que YouTube devuelve páginas
+ * genéricas cuando detecta peticiones sin cookies de sesión.
+ *
+ * @param originalUrl - URL del vídeo de YouTube
+ * @returns Datos del vídeo (título, autor, thumbnail)
+ */
+async function extractYouTubeData(originalUrl: string): Promise<ScrapedData> {
+  // Construir URL de la API oEmbed de YouTube
+  const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(originalUrl)}&format=json`;
+
+  try {
+    const response = await fetch(oembedUrl);
+    if (!response.ok) {
+      throw new Error('oEmbed request failed');
+    }
+
+    const data = await response.json();
+
+    // Extraer el ID del vídeo para construir URL de thumbnail en alta resolución
+    // Funciona tanto con youtube.com/watch?v=ID como con youtu.be/ID
+    const videoIdMatch = originalUrl.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
+    const videoId = videoIdMatch ? videoIdMatch[1] : null;
+
+    // Usar maxresdefault.jpg para obtener la mejor calidad de thumbnail
+    // Si no se puede extraer el ID, usar el thumbnail que devuelve oEmbed
+    const maxResThumbnail = videoId
+      ? `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
+      : data.thumbnail_url;
+
+    return {
+      title: data.title || null,
+      description: null, // La API oEmbed no proporciona descripción del vídeo
+      image: maxResThumbnail,
+      url: originalUrl, // Mantener la URL original del usuario
+      author: data.author_name || null, // Nombre del canal de YouTube
+    };
+  } catch {
+    // Si falla la API oEmbed, retornar datos mínimos con la URL original
+    return {
+      title: null,
+      description: null,
+      image: null,
+      url: originalUrl,
+      author: null,
+    };
+  }
+}
+
+// ============================================================================
+// EXTRACTOR DE AMAZON
+// ============================================================================
+
+/**
+ * Comprueba si una URL pertenece a Amazon.
+ * Soporta 12 dominios de Amazon en diferentes países.
+ *
+ * @param url - URL a comprobar
+ * @returns true si es una URL de Amazon, false en caso contrario
+ */
 function isAmazonUrl(url: string): boolean {
   try {
     const hostname = new URL(url).hostname;
-    // Match amazon.es, www.amazon.es, smile.amazon.com, etc.
+    // Lista de dominios de Amazon soportados:
+    // .com (USA), .es (España), .co.uk (UK), .de (Alemania), .fr (Francia),
+    // .it (Italia), .ca (Canadá), .com.mx (México), .com.br (Brasil),
+    // .co.jp (Japón), .in (India), .com.au (Australia)
     return /^(www\.)?amazon\.(com|es|co\.uk|de|fr|it|ca|com\.mx|com\.br|co\.jp|in|com\.au)$/i.test(hostname) ||
            /\.amazon\.(com|es|co\.uk|de|fr|it|ca|com\.mx|com\.br|co\.jp|in|com\.au)$/i.test(hostname);
   } catch {
@@ -40,15 +154,32 @@ function isAmazonUrl(url: string): boolean {
   }
 }
 
-// Amazon-specific extraction
+/**
+ * Extrae datos de una página de producto de Amazon.
+ *
+ * Amazon tiene una estructura de DOM específica que difiere de los
+ * metadatos estándar Open Graph. Esta función usa selectores CSS
+ * específicos de Amazon para extraer:
+ * - Título del producto
+ * - Autor (para libros) o Marca (para productos)
+ * - Descripción del libro o características del producto
+ * - Imagen del producto en la mejor resolución disponible
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @param originalUrl - URL original para usar como fallback
+ * @returns Datos del producto de Amazon
+ */
 function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedData {
-  // Title: #productTitle or #ebooksProductTitle
+  // ---- EXTRACCIÓN DEL TÍTULO ----
+  // Primero intentar #productTitle (productos físicos) o #ebooksProductTitle (ebooks)
   let title: string | null = $('#productTitle').text().trim() || $('#ebooksProductTitle').text().trim() || null;
   if (!title) {
+    // Fallback: usar meta title y tomar solo la primera parte (antes de ":")
     title = $('meta[name="title"]').attr('content')?.split(':')[0]?.trim() || null;
   }
 
-  // Author: from #bylineInfo (for books) or brand (for products)
+  // ---- EXTRACCIÓN DEL AUTOR/MARCA ----
+  // Para libros: buscar en #bylineInfo con clase .author
   let author = $('#bylineInfo .author a').first().text().trim();
   if (!author) {
     author = $('#bylineInfo a.contributorNameID').first().text().trim();
@@ -56,26 +187,26 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
   if (!author) {
     author = $('span.author a').first().text().trim();
   }
-  // For products: extract brand from "Visit the X Store" (EN) or "Visita la tienda de X" (ES) or similar
+
+  // Para productos: extraer marca del texto "Visit the X Store" en diferentes idiomas
   if (!author) {
     const bylineText = $('#bylineInfo').text().trim();
-    // English: "Visit the Apple Store"
-    const brandMatchEn = bylineText.match(/Visit the (.+?) Store/i);
-    // Spanish: "Visita la tienda de Apple"
-    const brandMatchEs = bylineText.match(/Visita la tienda de (.+)/i);
-    // French: "Visiter la boutique X"
-    const brandMatchFr = bylineText.match(/Visiter la boutique (.+)/i);
-    // German: "Besuche den X Store"
-    const brandMatchDe = bylineText.match(/Besuche den (.+?)[-\s]Store/i);
+    // Patrones para diferentes idiomas
+    const brandMatchEn = bylineText.match(/Visit the (.+?) Store/i);        // Inglés
+    const brandMatchEs = bylineText.match(/Visita la tienda de (.+)/i);     // Español
+    const brandMatchFr = bylineText.match(/Visiter la boutique (.+)/i);     // Francés
+    const brandMatchDe = bylineText.match(/Besuche den (.+?)[-\s]Store/i);  // Alemán
 
     const brandMatch = brandMatchEn || brandMatchEs || brandMatchFr || brandMatchDe;
     if (brandMatch) {
       author = brandMatch[1].trim();
     }
   }
-  // Fallback: try to get brand from link text, cleaning common patterns
+
+  // Último fallback: limpiar el texto del enlace de marca
   if (!author) {
     let linkText = $('#bylineInfo a').first().text().trim();
+    // Eliminar prefijos y sufijos comunes en todos los idiomas
     linkText = linkText
       .replace(/^Visit the\s+/i, '')
       .replace(/^Visita la tienda de\s+/i, '')
@@ -88,22 +219,23 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
     }
   }
 
-  // Description: from bookDescription area or product description
+  // ---- EXTRACCIÓN DE LA DESCRIPCIÓN ----
   let description = '';
 
-  // Try multiple selectors for the book description
+  // Lista de selectores para la descripción del libro (en orden de prioridad)
   const descSelectors = [
-    '#bookDescription_feature_div .a-expander-content',
+    '#bookDescription_feature_div .a-expander-content', // Descripción expandible de libros
     '#bookDescription .a-expander-content',
     '[data-a-expander-name="book_description_expander"] .a-expander-content',
     '#bookDescription_feature_div',
     '#bookDescription',
   ];
 
+  // Intentar cada selector hasta encontrar contenido
   for (const selector of descSelectors) {
     const descDiv = $(selector);
     if (descDiv.length) {
-      // Try to get text from paragraphs first
+      // Preferir extraer texto de párrafos individuales
       const paragraphs: string[] = [];
       descDiv.find('p').each((_, el) => {
         const text = $(el).text().trim();
@@ -115,7 +247,7 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
         break;
       }
 
-      // Fallback to full text content
+      // Fallback: usar todo el texto del contenedor
       const fullText = descDiv.text().trim();
       if (fullText && fullText.length > 50) {
         description = fullText;
@@ -124,56 +256,59 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
     }
   }
 
-  // Try product description for non-book items
+  // Para productos no-libro: intentar #productDescription
   if (!description) {
     description = $('#productDescription p').text().trim();
   }
 
-  // Try feature-bullets for products (electronics, etc.)
+  // Para electrónica y otros: usar los "feature bullets" (lista de características)
   if (!description) {
     const bullets: string[] = [];
     $('#feature-bullets ul li span.a-list-item').each((_, el) => {
       const text = $(el).text().trim();
+      // Excluir disclaimers legales
       if (text && !text.includes('LEGAL DISCLAIMER')) {
         bullets.push(text);
       }
     });
     if (bullets.length > 0) {
-      // Take first 2-3 bullets as description
+      // Tomar solo las primeras 3 características como descripción
       description = bullets.slice(0, 3).join(' ');
     }
   }
 
-  // Last resort: meta description, but only if it's different from title
+  // Último recurso: meta description (solo si no parece ser texto genérico)
   if (!description) {
     const metaDesc = $('meta[name="description"]').attr('content') || '';
-    // Only use if it doesn't look like a repeated title
     if (metaDesc && !metaDesc.includes('Amazon.es') && metaDesc.length > 50) {
       description = metaDesc;
     }
   }
 
-  // Truncate if too long
+  // Truncar descripción si es muy larga
   if (description.length > 500) {
     description = description.substring(0, 497) + '...';
   }
 
-  // Image: from #landingImage or #imgBlkFront with data-a-dynamic-image
+  // ---- EXTRACCIÓN DE LA IMAGEN ----
   let image: string | null = null;
+
+  // Amazon almacena múltiples resoluciones en el atributo data-a-dynamic-image como JSON
   const imgElement = $('#landingImage, #imgBlkFront, #ebooksImgBlkFront').first();
   const dynamicImageData = imgElement.attr('data-a-dynamic-image');
 
   if (dynamicImageData) {
     try {
+      // Parsear el JSON que contiene {url: [ancho, alto], ...}
       const imageObj = JSON.parse(dynamicImageData);
-      // Get the largest image (last key usually has highest resolution)
       const imageUrls = Object.keys(imageObj);
+
       if (imageUrls.length > 0) {
-        // Find the largest image by dimensions
+        // Encontrar la imagen con mayor resolución (mayor área)
         let maxSize = 0;
         for (const url of imageUrls) {
           const dims = imageObj[url];
-          const size = dims[0] * dims[1];
+          const size = dims[0] * dims[1]; // ancho * alto
           if (size > maxSize) {
             maxSize = size;
             image = url;
@@ -181,19 +316,19 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
         }
       }
     } catch {
-      // Fallback to src attribute
+      // Si falla el parseo, usar el atributo src normal
       image = imgElement.attr('src') || null;
     }
   } else {
     image = imgElement.attr('src') || null;
   }
 
-  // Fallback to og:image if no product image found
+  // Fallback: usar og:image si no se encontró imagen del producto
   if (!image) {
     image = $('meta[property="og:image"]').attr('content') || null;
   }
 
-  // Canonical URL
+  // ---- URL CANÓNICA ----
   const canonical = $('link[rel="canonical"]').attr('href') || originalUrl;
 
   return {
@@ -205,7 +340,15 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
   };
 }
 
-// Selectors for article intro/lead paragraphs (in priority order)
+// ============================================================================
+// EXTRACTOR GENÉRICO (Open Graph, Twitter Cards, meta tags)
+// ============================================================================
+
+/**
+ * Lista de selectores CSS para encontrar el párrafo introductorio de un artículo.
+ * Se prueban en orden de prioridad hasta encontrar contenido válido.
+ * Incluye selectores comunes en sitios de noticias españoles e internacionales.
+ */
 const LEAD_SELECTORS = [
   'p.paragraph:first-of-type',
   '.paragraph:first-of-type',
@@ -219,10 +362,10 @@ const LEAD_SELECTORS = [
   '.subtitle',
   '.article-subtitle',
   '.article__subtitle',
-  '.entradilla',
-  '.sumario',
+  '.entradilla',              // Común en medios españoles
+  '.sumario',                 // Común en medios españoles
   '.excerpt',
-  '[itemprop="description"]',
+  '[itemprop="description"]', // Schema.org
   '[itemprop="articleBody"] > p:first-of-type',
   'article > p:first-of-type',
   '.content > p:first-of-type',
@@ -232,49 +375,71 @@ const LEAD_SELECTORS = [
   '.post-content > p:first-of-type',
 ];
 
+/**
+ * Extrae el título de la página usando diferentes fuentes de metadatos.
+ * Orden de prioridad: Open Graph > Twitter > <title> > <h1>
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @returns Título de la página o null si no se encuentra
+ */
 function extractTitle($: cheerio.CheerioAPI): string | null {
-  // Try Open Graph title first
+  // 1. Open Graph title (usado por Facebook, LinkedIn, etc.)
   const ogTitle = $('meta[property="og:title"]').attr('content');
   if (ogTitle) return ogTitle.trim();
 
-  // Try Twitter title
+  // 2. Twitter Card title
   const twitterTitle = $('meta[name="twitter:title"]').attr('content');
   if (twitterTitle) return twitterTitle.trim();
 
-  // Try standard title tag
+  // 3. Etiqueta <title> estándar
   const title = $('title').text();
   if (title) return title.trim();
 
-  // Try h1
+  // 4. Primer <h1> de la página
   const h1 = $('h1').first().text();
   if (h1) return h1.trim();
 
   return null;
 }
 
+/**
+ * Extrae la descripción de la página desde metadatos.
+ * Orden de prioridad: Open Graph > Twitter > meta description
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @returns Descripción de la página o null si no se encuentra
+ */
 function extractDescription($: cheerio.CheerioAPI): string | null {
-  // Try Open Graph description
+  // 1. Open Graph description
   const ogDesc = $('meta[property="og:description"]').attr('content');
   if (ogDesc) return ogDesc.trim();
 
-  // Try Twitter description
+  // 2. Twitter Card description
   const twitterDesc = $('meta[name="twitter:description"]').attr('content');
   if (twitterDesc) return twitterDesc.trim();
 
-  // Try standard meta description
+  // 3. Meta description estándar
   const metaDesc = $('meta[name="description"]').attr('content');
   if (metaDesc) return metaDesc.trim();
 
   return null;
 }
 
+/**
+ * Intenta encontrar una descripción más larga en el contenido del artículo.
+ * Útil cuando la meta description es muy corta o genérica.
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @param metaDescription - Descripción de metadatos para comparar longitud
+ * @returns Descripción larga del artículo o null si no es mejor que la meta
+ */
 function extractLongDescription($: cheerio.CheerioAPI, metaDescription: string | null): string | null {
-  // Try each selector to find a longer description
+  // Probar cada selector en orden de prioridad
   for (const selector of LEAD_SELECTORS) {
     const element = $(selector).first();
     if (element.length) {
       const text = element.text().trim();
-      // Only use if it's longer than the meta description and has reasonable length
+      // Solo usar si tiene longitud razonable y es más largo que la meta description
       if (text.length > 50 && (!metaDescription || text.length > metaDescription.length)) {
         return text;
       }
@@ -283,36 +448,50 @@ function extractLongDescription($: cheerio.CheerioAPI, metaDescription: string |
   return null;
 }
 
+/**
+ * Extrae la imagen principal de la página.
+ * Orden de prioridad: Open Graph > Twitter > primera imagen del artículo
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @returns URL de la imagen o null si no se encuentra
+ */
 function extractImage($: cheerio.CheerioAPI): string | null {
-  // Try Open Graph image
+  // 1. Open Graph image (la más común para compartir)
   const ogImage = $('meta[property="og:image"]').attr('content');
   if (ogImage) return ogImage;
 
-  // Try Twitter image
+  // 2. Twitter Card image
   const twitterImage = $('meta[name="twitter:image"]').attr('content');
   if (twitterImage) return twitterImage;
 
-  // Try first article image
+  // 3. Primera imagen dentro de un <article>
   const articleImage = $('article img').first().attr('src');
   if (articleImage) return articleImage;
 
   return null;
 }
 
+/**
+ * Extrae el autor del contenido.
+ * Busca en metadatos Open Graph, meta tags y elementos comunes del DOM.
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @returns Nombre del autor o null si no se encuentra
+ */
 function extractAuthor($: cheerio.CheerioAPI): string | null {
-  // Try Open Graph author
+  // 1. Open Graph article:author
   const ogAuthor = $('meta[property="article:author"]').attr('content');
   if (ogAuthor) return ogAuthor.trim();
 
-  // Try meta author
+  // 2. Meta author estándar
   const metaAuthor = $('meta[name="author"]').attr('content');
   if (metaAuthor) return metaAuthor.trim();
 
-  // Try schema.org author
+  // 3. Schema.org itemprop="author"
   const schemaAuthor = $('[itemprop="author"]').first().text();
   if (schemaAuthor) return schemaAuthor.trim();
 
-  // Try common author class names
+  // 4. Selectores CSS comunes para bylines de autor
   const authorSelectors = ['.author', '.byline', '.author-name', '[rel="author"]'];
   for (const selector of authorSelectors) {
     const author = $(selector).first().text();
@@ -322,40 +501,78 @@ function extractAuthor($: cheerio.CheerioAPI): string | null {
   return null;
 }
 
+/**
+ * Extrae la URL canónica de la página.
+ * La URL canónica es la versión "oficial" de la URL que el sitio prefiere.
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @param originalUrl - URL original como fallback
+ * @returns URL canónica o la URL original si no se encuentra
+ */
 function extractCanonicalUrl($: cheerio.CheerioAPI, originalUrl: string): string {
-  // Try canonical link
+  // 1. Enlace canónico explícito
   const canonical = $('link[rel="canonical"]').attr('href');
   if (canonical) return canonical;
 
-  // Try Open Graph URL
+  // 2. Open Graph URL
   const ogUrl = $('meta[property="og:url"]').attr('content');
   if (ogUrl) return ogUrl;
 
+  // 3. Usar la URL original proporcionada
   return originalUrl;
 }
 
+// ============================================================================
+// FUNCIÓN PRINCIPAL DE SCRAPING
+// ============================================================================
+
+/**
+ * Función principal que extrae metadatos de cualquier URL.
+ *
+ * El proceso es:
+ * 1. Detectar si es YouTube -> usar API oEmbed
+ * 2. Si no, hacer fetch del HTML con headers de navegador
+ * 3. Detectar si es Amazon -> usar extractor especializado
+ * 4. Si no, usar extractor genérico (Open Graph, Twitter, meta tags)
+ *
+ * @param targetUrl - URL de la página a analizar
+ * @returns Datos extraídos de la página
+ * @throws Error si no se puede acceder a la URL
+ */
 export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
+  // Caso especial: YouTube
+  // Usamos oEmbed porque YouTube bloquea peticiones de servidores sin sesión
+  if (isYouTubeUrl(targetUrl)) {
+    return extractYouTubeData(targetUrl);
+  }
+
+  // Hacer petición HTTP con headers que simulan un navegador real
   const response = await fetch(targetUrl, {
     headers: BROWSER_HEADERS,
   });
 
+  // Verificar que la petición fue exitosa
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
   }
 
+  // Parsear el HTML con Cheerio (similar a jQuery para Node.js)
   const html = await response.text();
   const $ = cheerio.load(html);
 
-  // Use Amazon-specific extraction if URL is from Amazon
+  // Caso especial: Amazon
+  // Amazon tiene estructura de DOM propia que no usa Open Graph correctamente
   if (isAmazonUrl(targetUrl)) {
     return extractAmazonData($, targetUrl);
   }
 
+  // Caso genérico: usar metadatos estándar
   const metaDescription = extractDescription($);
   const longDescription = extractLongDescription($, metaDescription);
 
   return {
     title: extractTitle($),
+    // Preferir descripción larga del artículo si está disponible
     description: longDescription || metaDescription,
     image: extractImage($),
     url: extractCanonicalUrl($, targetUrl),
