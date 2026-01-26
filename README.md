@@ -2,14 +2,37 @@
 
 Aplicación web que obtiene el título y subtítulo de una página web a partir de su URL, para compartirlos junto con el enlace en WhatsApp y Telegram.
 
+**Disponible en: https://link-to-share.vercel.app**
+
 ## Características
 
 - Extrae título, descripción, imagen y autor de cualquier URL
+- **Soporte especial para Amazon** (libros, eBooks y productos) en 12 países
 - Selector de formato: WhatsApp (`*negrita*`) o Telegram (`**negrita**`)
 - Texto de salida con separadores visuales
 - Bookmarklet para compartir desde cualquier página
 - Edición manual de los campos extraídos
 - Interfaz en español
+
+## Sitios soportados
+
+### General
+Cualquier sitio web con metadatos Open Graph, Twitter Cards o meta tags estándar.
+
+### Amazon (soporte específico)
+Extracción optimizada para productos y libros de Amazon en:
+- amazon.com (USA)
+- amazon.es (España)
+- amazon.co.uk (Reino Unido)
+- amazon.de (Alemania)
+- amazon.fr (Francia)
+- amazon.it (Italia)
+- amazon.ca (Canadá)
+- amazon.com.mx (México)
+- amazon.com.br (Brasil)
+- amazon.co.jp (Japón)
+- amazon.in (India)
+- amazon.com.au (Australia)
 
 ## Requisitos
 

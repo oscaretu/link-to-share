@@ -44,9 +44,28 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 
 ## Specific Rules & Logic
 
-- **CORS/User-Agent:** When fetching the target URL, use a realistic User-Agent header (like a Chrome browser) to avoid being blocked by sites like Amazon or Medium.
+- **CORS/User-Agent:** When fetching the target URL, use a realistic User-Agent header (like a Chrome browser) with Sec-Ch-Ua and Sec-Fetch-* headers to avoid being blocked.
 - **Error Handling:** If a URL is invalid or the site blocks scraping, show a manual entry form pre-filled with whatever data was possible to find.
 - **Markdown Support:** The format selector allows choosing between WhatsApp (`*bold*`) and Telegram (`**bold**`) formatting for the title.
+
+## Amazon Support
+
+The scraper includes specialized extraction for Amazon URLs across 12 country domains:
+- `.com`, `.es`, `.co.uk`, `.de`, `.fr`, `.it`, `.ca`, `.com.mx`, `.com.br`, `.co.jp`, `.in`, `.com.au`
+
+### Amazon-specific selectors:
+- **Title:** `#productTitle` or `#ebooksProductTitle`
+- **Description (books):** `#bookDescription_feature_div .a-expander-content p`
+- **Description (products):** `#feature-bullets ul li span.a-list-item`
+- **Author/Brand:** `#bylineInfo .author a` (books) or brand extraction from `#bylineInfo` text (products)
+- **Image:** `#landingImage` with `data-a-dynamic-image` JSON attribute (selects highest resolution)
+
+### Multi-language brand extraction:
+The scraper extracts brand names from patterns like:
+- English: "Visit the X Store"
+- Spanish: "Visita la tienda de X"
+- French: "Visiter la boutique X"
+- German: "Besuche den X Store"
 
 ## File Structure
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface PreviewCardProps {
   title: string;
@@ -27,6 +27,13 @@ export default function PreviewCard({
   const [editUrl, setEditUrl] = useState(url);
   const [copied, setCopied] = useState(false);
   const [format, setFormat] = useState<FormatType>('whatsapp');
+
+  // Sync state when props change (e.g., new URL extracted)
+  useEffect(() => {
+    setEditTitle(title);
+    setEditDescription(description);
+    setEditUrl(url);
+  }, [title, description, url]);
 
   const formatTitle = (text: string, fmt: FormatType) => {
     return fmt === 'whatsapp' ? `*${text}*` : `**${text}**`;
