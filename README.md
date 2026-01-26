@@ -99,7 +99,7 @@ src/
 ├── components/
 │   └── PreviewCard.tsx     # Componente de previsualización
 ├── lib/
-│   ├── scraper.ts          # Lógica de scraping
+│   ├── scraper.ts          # Extracción de metadatos con Cheerio
 │   └── version.ts          # Versión de la app
 └── __tests__/              # Tests
 ```
@@ -108,8 +108,7 @@ src/
 
 - [Next.js](https://nextjs.org/) - Framework React
 - [Tailwind CSS](https://tailwindcss.com/) - Estilos
-- [Metascraper](https://metascraper.js.org/) - Extracción de metadatos
-- [Cheerio](https://cheerio.js.org/) - Parsing HTML
+- [Cheerio](https://cheerio.js.org/) - Parsing HTML y extracción de metadatos (Open Graph, Twitter, meta tags)
 - [Jest](https://jestjs.io/) - Tests
 - [React Testing Library](https://testing-library.com/react) - Tests de componentes
 

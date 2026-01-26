@@ -7,9 +7,8 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 ## Tech Stack
 - **Framework:** Next.js (App Router)
 - **Styling:** Tailwind CSS
-- **Data Extraction:** `metascraper`, `metascraper-title`, `metascraper-description`, `metascraper-image`, `metascraper-url`, `metascraper-author`.
-- **HTML Parsing:** `cheerio` (for extracting longer descriptions from article body)
-- **Deployment:** Vercel (recommended for API routes).
+- **Data Extraction:** `cheerio` (parsing HTML and extracting metadata from Open Graph, Twitter, and meta tags)
+- **Deployment:** Vercel
 - **Testing:** Jest + React Testing Library
 - **Language:** Spanish (all UI text is in Spanish)
 
@@ -19,7 +18,7 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - **Input:** Must accept a `url` parameter via GET request (e.g., `/?url=https://example.com`).
 - **Extraction Engine:** - Create a server-side API route `/api/extract`.
     - Use `fetch` with a realistic User-Agent to get the HTML.
-    - Use `metascraper` to parse: Title, Subtitle (Description), Canonical URL, and Hero Image.
+    - Use `cheerio` to parse: Title, Subtitle (Description), Canonical URL, Hero Image, and Author from Open Graph, Twitter, and standard meta tags.
 - **UI/UX:**
     - Display version number in header: "Link to Share (x.x.x)"
     - Display a "Card Preview" of the link.
@@ -54,7 +53,7 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - `/src/app/api/extract/route.ts` -> Logic for fetching and scraping.
 - `/src/app/page.tsx` -> Main UI and state management for the preview.
 - `/src/components/PreviewCard.tsx` -> Visual representation of the link with format selector.
-- `/src/lib/scraper.ts` -> Metascraper configuration + cheerio extraction for longer descriptions.
+- `/src/lib/scraper.ts` -> Cheerio-based extraction of metadata (Open Graph, Twitter, meta tags) and longer descriptions from article body.
 - `/src/lib/version.ts` -> App version constant.
 - `/src/__tests__/` -> Test files.
 
