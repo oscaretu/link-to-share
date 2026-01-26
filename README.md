@@ -1,6 +1,6 @@
 # Link to Share
 
-Aplicación web para extraer y formatear enlaces de artículos web para compartir en WhatsApp y Telegram.
+Aplicación web que obtiene el título y subtítulo de una página web a partir de su URL, para compartirlos junto con el enlace en WhatsApp y Telegram.
 
 ## Características
 

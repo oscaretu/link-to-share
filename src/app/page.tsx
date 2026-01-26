@@ -117,7 +117,7 @@ function HomeContent() {
             Link to Share <span className="text-sm font-normal text-gray-400">({APP_VERSION})</span>
           </h1>
           <p className="text-gray-600 mt-1">
-            Extrae y formatea enlaces para WhatsApp y Telegram
+            Obtén título y subtítulo de una URL para compartir en WhatsApp y Telegram
           </p>
         </div>
 
