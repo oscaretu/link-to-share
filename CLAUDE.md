@@ -48,6 +48,20 @@ The flow: Browser (Article) -> Bookmarklet -> Web App (Extracts Info) -> Formatt
 - **Error Handling:** If a URL is invalid or the site blocks scraping, show a manual entry form pre-filled with whatever data was possible to find.
 - **Markdown Support:** The format selector allows choosing between WhatsApp (`*bold*`) and Telegram (`**bold**`) formatting for the title.
 
+## Twitter/X Support
+
+The scraper includes specialized extraction for Twitter/X URLs (`twitter.com` and `x.com`).
+
+Twitter requires authentication to view tweets server-side, so direct fetching returns a login page. The extractor uses two strategies:
+1. **Primary:** `fxtwitter.com` public API — returns full tweet data (text, author, photos, videos)
+2. **Fallback:** Twitter oEmbed API (`publish.twitter.com/oembed`) — returns tweet text and author name
+
+### Extracted fields:
+- **Title:** Author display name
+- **Description:** Tweet text
+- **Image:** First photo or video thumbnail from the tweet
+- **Author:** `@handle`
+
 ## Amazon Support
 
 The scraper includes specialized extraction for Amazon URLs across 12 country domains:

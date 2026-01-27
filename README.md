@@ -7,6 +7,7 @@ Aplicación web que obtiene el título y subtítulo de una página web a partir 
 ## Características
 
 - Extrae título, descripción, imagen y autor de cualquier URL
+- **Soporte especial para Twitter/X** (tweets con texto, autor e imágenes)
 - **Soporte especial para Amazon** (libros, eBooks y productos) en 12 países
 - Selector de formato: WhatsApp (`*negrita*`) o Telegram (`**negrita**`)
 - Texto de salida con separadores visuales
@@ -18,6 +19,9 @@ Aplicación web que obtiene el título y subtítulo de una página web a partir 
 
 ### General
 Cualquier sitio web con metadatos Open Graph, Twitter Cards o meta tags estándar.
+
+### Twitter/X (soporte específico)
+Extracción de tweets desde `twitter.com` y `x.com` usando la API de fxtwitter (con oEmbed como fallback). Obtiene texto del tweet, autor e imágenes.
 
 ### Amazon (soporte específico)
 Extracción optimizada para productos y libros de Amazon en:

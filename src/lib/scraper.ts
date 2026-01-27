@@ -130,6 +130,106 @@ async function extractYouTubeData(originalUrl: string): Promise<ScrapedData> {
 }
 
 // ============================================================================
+// EXTRACTOR DE TWITTER/X
+// ============================================================================
+
+/**
+ * Comprueba si una URL pertenece a Twitter o X.
+ * Soporta tanto twitter.com como x.com.
+ *
+ * @param url - URL a comprobar
+ * @returns true si es una URL de Twitter/X, false en caso contrario
+ */
+function isTwitterUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return /^(www\.)?(twitter\.com|x\.com)$/i.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extrae datos de un tweet usando la API de fxtwitter.com.
+ *
+ * Twitter/X requiere autenticación para ver tweets, por lo que las peticiones
+ * desde el servidor devuelven una página de login. fxtwitter es un servicio
+ * público que proporciona los datos del tweet en formato JSON.
+ *
+ * Fallback: si fxtwitter falla, se intenta la API oEmbed de Twitter.
+ *
+ * @param originalUrl - URL del tweet
+ * @returns Datos del tweet (texto, autor, imagen)
+ */
+async function extractTwitterData(originalUrl: string): Promise<ScrapedData> {
+  // Extraer usuario y ID del tweet de la URL
+  // Formato: https://x.com/usuario/status/1234567890
+  const tweetMatch = originalUrl.match(/(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/);
+
+  if (tweetMatch) {
+    const [, user, tweetId] = tweetMatch;
+    try {
+      // fxtwitter API devuelve datos completos del tweet en JSON
+      const fxResponse = await fetch(`https://api.fxtwitter.com/${user}/status/${tweetId}`);
+      if (fxResponse.ok) {
+        const fxData = await fxResponse.json();
+        const tweet = fxData.tweet;
+        if (tweet) {
+          // Buscar la primera imagen del tweet si existe
+          let image: string | null = null;
+          if (tweet.media?.photos?.length > 0) {
+            image = tweet.media.photos[0].url;
+          } else if (tweet.media?.videos?.length > 0) {
+            image = tweet.media.videos[0].thumbnail_url;
+          }
+
+          return {
+            title: tweet.author?.name || tweet.author?.screen_name || null,
+            description: tweet.text || null,
+            image,
+            url: originalUrl,
+            author: tweet.author?.screen_name ? `@${tweet.author.screen_name}` : null,
+          };
+        }
+      }
+    } catch {
+      // Si fxtwitter falla, continuar al fallback
+    }
+  }
+
+  // Fallback: API oEmbed de Twitter (proporciona menos datos pero es oficial)
+  try {
+    const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(originalUrl)}`;
+    const response = await fetch(oembedUrl);
+    if (response.ok) {
+      const data = await response.json();
+      // El HTML de oEmbed contiene el texto del tweet en un <blockquote>
+      const htmlContent = data.html || '';
+      const $oembed = cheerio.load(htmlContent);
+      const tweetText = $oembed('blockquote p').text().trim();
+
+      return {
+        title: data.author_name || null,
+        description: tweetText || null,
+        image: null, // oEmbed de Twitter no proporciona imagen
+        url: data.url || originalUrl,
+        author: data.author_name || null,
+      };
+    }
+  } catch {
+    // Si ambos métodos fallan, retornar datos mínimos
+  }
+
+  return {
+    title: null,
+    description: null,
+    image: null,
+    url: originalUrl,
+    author: null,
+  };
+}
+
+// ============================================================================
 // EXTRACTOR DE AMAZON
 // ============================================================================
 
@@ -544,6 +644,12 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
   // Usamos oEmbed porque YouTube bloquea peticiones de servidores sin sesión
   if (isYouTubeUrl(targetUrl)) {
     return extractYouTubeData(targetUrl);
+  }
+
+  // Caso especial: Twitter/X
+  // Twitter requiere autenticación, usamos fxtwitter API como proxy
+  if (isTwitterUrl(targetUrl)) {
+    return extractTwitterData(targetUrl);
   }
 
   // Hacer petición HTTP con headers que simulan un navegador real
