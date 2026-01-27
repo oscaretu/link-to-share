@@ -657,14 +657,29 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
     headers: BROWSER_HEADERS,
   });
 
-  // Verificar que la petición fue exitosa
-  if (!response.ok) {
-    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-  }
-
-  // Parsear el HTML con Cheerio (similar a jQuery para Node.js)
+  // Parsear el HTML con Cheerio incluso si la respuesta no es 200,
+  // ya que algunos sitios (ej. con anti-bot) devuelven contenido útil
+  // en respuestas 403/429
   const html = await response.text();
   const $ = cheerio.load(html);
+
+  // Si la respuesta no fue exitosa, intentar extraer metadatos del HTML recibido.
+  // Si no hay datos útiles, lanzar error para que el frontend muestre edición manual.
+  if (!response.ok) {
+    const title = extractTitle($);
+    const description = extractDescription($);
+    const image = extractImage($);
+    if (title || description || image) {
+      return {
+        title,
+        description,
+        image,
+        url: extractCanonicalUrl($, targetUrl),
+        author: extractAuthor($),
+      };
+    }
+    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+  }
 
   // Caso especial: Amazon
   // Amazon tiene estructura de DOM propia que no usa Open Graph correctamente
