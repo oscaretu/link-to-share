@@ -81,6 +81,15 @@ The scraper extracts brand names from patterns like:
 - French: "Visiter la boutique X"
 - German: "Besuche den X Store"
 
+## Microlink Fallback
+
+When direct fetching fails with 403/429 (common with Cloudflare-protected sites like Politico), the scraper uses [Microlink API](https://microlink.io) as a fallback. Microlink uses headless browsers to extract metadata from protected sites.
+
+The fallback is triggered automatically when:
+1. The HTTP response is not 2xx
+2. No useful metadata is found in the error response HTML
+3. Microlink is called and returns valid data
+
 ## File Structure
 
 - `/src/app/api/extract/route.ts` -> Logic for fetching and scraping.

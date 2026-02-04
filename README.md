@@ -13,6 +13,7 @@ Aplicación web que obtiene el título y subtítulo de una página web a partir 
 - Texto de salida con separadores visuales
 - Bookmarklet para compartir desde cualquier página
 - Edición manual de los campos extraídos
+- **Fallback con Microlink** para sitios protegidos por Cloudflare
 - Interfaz en español
 
 ## Sitios soportados

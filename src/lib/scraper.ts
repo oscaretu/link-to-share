@@ -31,6 +31,13 @@ export interface ScrapedData {
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
 /**
+ * URL base de la API de Microlink.
+ * Microlink es un servicio gratuito que usa headless browsers para extraer
+ * metadatos de URLs protegidas por Cloudflare u otras protecciones anti-bot.
+ */
+const MICROLINK_API = 'https://api.microlink.io';
+
+/**
  * Headers HTTP que simulan una petición de navegador real.
  * Incluye headers Sec-Ch-Ua y Sec-Fetch-* que los navegadores modernos envían.
  * Esto ayuda a evitar bloqueos por detección de bots en sitios como Amazon.
@@ -53,6 +60,44 @@ const BROWSER_HEADERS = {
   'Sec-Fetch-Site': 'none',
   'Sec-Fetch-User': '?1',
 };
+
+// ============================================================================
+// FALLBACK CON MICROLINK API
+// ============================================================================
+
+/**
+ * Extrae metadatos usando la API de Microlink como fallback.
+ * Microlink usa headless browsers que pueden bypasear protecciones anti-bot
+ * como Cloudflare. Se usa cuando el fetch directo falla con 403/429.
+ *
+ * @param targetUrl - URL de la página a analizar
+ * @returns Datos extraídos o null si Microlink también falla
+ */
+async function extractWithMicrolink(targetUrl: string): Promise<ScrapedData | null> {
+  try {
+    const response = await fetch(`${MICROLINK_API}?url=${encodeURIComponent(targetUrl)}`);
+    if (!response.ok) {
+      return null;
+    }
+
+    const json = await response.json();
+    if (json.status !== 'success' || !json.data) {
+      return null;
+    }
+
+    const data = json.data;
+    return {
+      title: data.title || null,
+      description: data.description || null,
+      // Usar imagen, o logo del sitio como fallback
+      image: data.image?.url || data.logo?.url || null,
+      url: data.url || targetUrl,
+      author: data.author || data.publisher || null,
+    };
+  } catch {
+    return null;
+  }
+}
 
 // ============================================================================
 // EXTRACTOR DE YOUTUBE
@@ -664,12 +709,17 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
   const $ = cheerio.load(html);
 
   // Si la respuesta no fue exitosa, intentar extraer metadatos del HTML recibido.
-  // Si no hay datos útiles, lanzar error para que el frontend muestre edición manual.
+  // Si no hay datos útiles, usar Microlink como fallback (puede bypasear Cloudflare).
   if (!response.ok) {
     const title = extractTitle($);
     const description = extractDescription($);
     const image = extractImage($);
-    if (title || description || image) {
+
+    // Detectar páginas de challenge de Cloudflare u otras protecciones anti-bot
+    // Estos títulos genéricos indican que no tenemos el contenido real
+    const isChallengePage = title && /^(just a moment|attention required|please wait|checking your browser|one more step)/i.test(title);
+
+    if (!isChallengePage && (title || description || image)) {
       return {
         title,
         description,
@@ -678,6 +728,13 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
         author: extractAuthor($),
       };
     }
+
+    // Fallback: usar Microlink API para sitios protegidos por Cloudflare/anti-bot
+    const microlinkData = await extractWithMicrolink(targetUrl);
+    if (microlinkData && (microlinkData.title || microlinkData.description)) {
+      return microlinkData;
+    }
+
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
   }
 
