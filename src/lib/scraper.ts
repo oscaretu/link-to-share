@@ -275,6 +275,62 @@ async function extractTwitterData(originalUrl: string): Promise<ScrapedData> {
 }
 
 // ============================================================================
+// EXTRACTOR DE PACKT (Free Learning)
+// ============================================================================
+
+/**
+ * Comprueba si una URL es la página de Free Learning de Packt.
+ *
+ * @param url - URL a comprobar
+ * @returns true si es la página de free-learning de Packt
+ */
+function isPacktFreeLearningUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    return /^(www\.)?packtpub\.com$/i.test(urlObj.hostname) &&
+           urlObj.pathname.includes('free-learning');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extrae datos del libro gratuito del día de Packt.
+ *
+ * La página de free-learning tiene og:image vacío porque la imagen
+ * del libro se carga dinámicamente. Esta función extrae los datos
+ * directamente del DOM usando selectores específicos.
+ *
+ * @param $ - Instancia de Cheerio con el HTML parseado
+ * @param originalUrl - URL original
+ * @returns Datos del libro del día
+ */
+function extractPacktData($: cheerio.CheerioAPI, originalUrl: string): ScrapedData {
+  // Imagen del libro del día (primera con clase product-image en main-product)
+  const image = $('.main-product img.product-image').first().attr('src') || null;
+
+  // Título del libro
+  const title = $('.main-product .product-info__title').first().text().trim() || null;
+
+  // Autor del libro
+  const authorText = $('.main-product .product-info__author').first().text().trim();
+  // Limpiar el texto "By Author Name" -> "Author Name"
+  const author = authorText.replace(/^By\s+/i, '').trim() || null;
+
+  // Descripción del libro (si existe)
+  const description = $('.main-product .product-info__description').first().text().trim() ||
+                      $('meta[name="description"]').attr('content') || null;
+
+  return {
+    title,
+    description,
+    image,
+    url: $('link[rel="canonical"]').attr('href') || originalUrl,
+    author,
+  };
+}
+
+// ============================================================================
 // EXTRACTOR DE AMAZON
 // ============================================================================
 
@@ -736,6 +792,12 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
     }
 
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+  }
+
+  // Caso especial: Packt Free Learning
+  // La imagen del libro del día no está en og:image, hay que extraerla del DOM
+  if (isPacktFreeLearningUrl(targetUrl)) {
+    return extractPacktData($, targetUrl);
   }
 
   // Caso especial: Amazon
