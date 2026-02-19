@@ -25,11 +25,13 @@ import { APP_VERSION } from '@/lib/version';
  * Se usa para tipar el estado linkData.
  */
 interface LinkData {
-  title: string;        // Título del enlace (nunca null en el estado, usa 'Sin título' como fallback)
-  description: string;  // Descripción del enlace (puede ser string vacío)
-  image: string | null; // URL de la imagen (puede ser null si no hay imagen)
-  url: string;          // URL del enlace
-  author: string | null; // Autor o marca (puede ser null)
+  title: string;             // Título del enlace (nunca null en el estado, usa 'Sin título' como fallback)
+  description: string;       // Descripción del enlace (puede ser string vacío)
+  image: string | null;      // URL de la imagen (puede ser null si no hay imagen)
+  url: string;               // URL del enlace
+  author: string | null;     // Autor o marca (puede ser null)
+  publicationDate: string | null; // Fecha de publicación (para libros de Packt)
+  pages: string | null;      // Número de páginas (para libros de Packt)
 }
 
 /**
@@ -90,6 +92,8 @@ function HomeContent() {
             image: data.partial.image,
             url: data.partial.url || url,
             author: data.partial.author,
+            publicationDate: data.partial.publicationDate || null,
+            pages: data.partial.pages || null,
           });
           setError(`No se pudieron extraer todos los datos: ${data.error}. Puedes editar los campos manualmente.`);
         } else {
@@ -104,6 +108,8 @@ function HomeContent() {
           image: data.image,
           url: data.url || url,
           author: data.author,
+          publicationDate: data.publicationDate || null,
+          pages: data.pages || null,
         });
       }
     } catch (err) {
@@ -116,6 +122,8 @@ function HomeContent() {
         image: null,
         url: url,
         author: null,
+        publicationDate: null,
+        pages: null,
       });
     } finally {
       // Siempre desactivar el estado de carga al terminar
@@ -252,6 +260,8 @@ function HomeContent() {
             image={linkData.image}
             url={linkData.url}
             author={linkData.author}
+            publicationDate={linkData.publicationDate}
+            pages={linkData.pages}
             onEdit={handleEdit}
           />
         )}

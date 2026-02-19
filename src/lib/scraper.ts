@@ -17,11 +17,13 @@ import * as cheerio from 'cheerio';
  * Todos los campos pueden ser null si no se encuentra la información.
  */
 export interface ScrapedData {
-  title: string | null;       // Título de la página o producto
-  description: string | null; // Descripción o resumen del contenido
-  image: string | null;       // URL de la imagen principal o thumbnail
-  url: string | null;         // URL canónica de la página
-  author: string | null;      // Autor del artículo o marca del producto
+  title: string | null;            // Título de la página o producto
+  description: string | null;      // Descripción o resumen del contenido
+  image: string | null;            // URL de la imagen principal o thumbnail
+  url: string | null;              // URL canónica de la página
+  author: string | null;           // Autor del artículo o marca del producto
+  publicationDate: string | null;  // Fecha de publicación (para libros de Packt)
+  pages: string | null;            // Número de páginas (para libros de Packt)
 }
 
 /**
@@ -93,6 +95,8 @@ async function extractWithMicrolink(targetUrl: string): Promise<ScrapedData | nu
       image: data.image?.url || data.logo?.url || null,
       url: data.url || targetUrl,
       author: data.author || data.publisher || null,
+      publicationDate: null,
+      pages: null,
     };
   } catch {
     return null;
@@ -161,6 +165,8 @@ async function extractYouTubeData(originalUrl: string): Promise<ScrapedData> {
       image: maxResThumbnail,
       url: originalUrl, // Mantener la URL original del usuario
       author: data.author_name || null, // Nombre del canal de YouTube
+      publicationDate: null,
+      pages: null,
     };
   } catch {
     // Si falla la API oEmbed, retornar datos mínimos con la URL original
@@ -170,6 +176,8 @@ async function extractYouTubeData(originalUrl: string): Promise<ScrapedData> {
       image: null,
       url: originalUrl,
       author: null,
+      publicationDate: null,
+      pages: null,
     };
   }
 }
@@ -234,6 +242,8 @@ async function extractTwitterData(originalUrl: string): Promise<ScrapedData> {
             image,
             url: originalUrl,
             author: tweet.author?.screen_name ? `@${tweet.author.screen_name}` : null,
+            publicationDate: null,
+            pages: null,
           };
         }
       }
@@ -259,6 +269,8 @@ async function extractTwitterData(originalUrl: string): Promise<ScrapedData> {
         image: null, // oEmbed de Twitter no proporciona imagen
         url: data.url || originalUrl,
         author: data.author_name || null,
+        publicationDate: null,
+        pages: null,
       };
     }
   } catch {
@@ -271,6 +283,8 @@ async function extractTwitterData(originalUrl: string): Promise<ScrapedData> {
     image: null,
     url: originalUrl,
     author: null,
+    publicationDate: null,
+    pages: null,
   };
 }
 
@@ -306,20 +320,32 @@ function isPacktFreeLearningUrl(url: string): boolean {
  * @returns Datos del libro del día
  */
 function extractPacktData($: cheerio.CheerioAPI, originalUrl: string): ScrapedData {
-  // Imagen del libro del día (primera con clase product-image en main-product)
-  const image = $('.main-product img.product-image').first().attr('src') || null;
+  // Imagen del libro del día
+  const image = $('.product-info__image img.product-image').first().attr('src') ||
+                $('.main-product img.product-image').first().attr('src') || null;
 
-  // Título del libro
-  const title = $('.main-product .product-info__title').first().text().trim() || null;
+  // Título del libro (limpiar prefijo "Free eBook - " si existe)
+  const titleRaw = $('.product-info__title').first().text().trim() ||
+                   $('.main-product .product-info__title').first().text().trim() || null;
+  const title = titleRaw ? titleRaw.replace(/^Free eBook\s*-\s*/i, '') : null;
 
   // Autor del libro
-  const authorText = $('.main-product .product-info__author').first().text().trim();
-  // Limpiar el texto "By Author Name" -> "Author Name"
+  const authorText = $('.product-info__author.free_learning__author').first().text().trim() ||
+                     $('.main-product .product-info__author').first().text().trim();
   const author = authorText.replace(/^By\s+/i, '').trim() || null;
 
-  // Descripción del libro (si existe)
-  const description = $('.main-product .product-info__description').first().text().trim() ||
+  // Descripción del libro
+  const description = $('.free_learning__product_description span').first().text().trim() ||
+                      $('.main-product .product-info__description').first().text().trim() ||
                       $('meta[name="description"]').attr('content') || null;
+
+  // Fecha de publicación
+  const pubDateRaw = $('.free_learning__product_pages_date span').first().text().trim();
+  const publicationDate = pubDateRaw.replace(/^Publication date:\s*/i, '').trim() || null;
+
+  // Número de páginas
+  const pagesRaw = $('.free_learning__product_pages span').first().text().trim();
+  const pages = pagesRaw.replace(/^Pages:\s*/i, '').trim() || null;
 
   return {
     title,
@@ -327,6 +353,8 @@ function extractPacktData($: cheerio.CheerioAPI, originalUrl: string): ScrapedDa
     image,
     url: $('link[rel="canonical"]').attr('href') || originalUrl,
     author,
+    publicationDate,
+    pages,
   };
 }
 
@@ -538,6 +566,8 @@ function extractAmazonData($: cheerio.CheerioAPI, originalUrl: string): ScrapedD
     image,
     url: canonical,
     author: author || null,
+    publicationDate: null,
+    pages: null,
   };
 }
 
@@ -782,6 +812,8 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
         image,
         url: extractCanonicalUrl($, targetUrl),
         author: extractAuthor($),
+        publicationDate: null,
+        pages: null,
       };
     }
 
@@ -817,5 +849,7 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedData> {
     image: extractImage($),
     url: extractCanonicalUrl($, targetUrl),
     author: extractAuthor($),
+    publicationDate: null,
+    pages: null,
   };
 }

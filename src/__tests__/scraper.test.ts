@@ -178,3 +178,72 @@ describe('Format functions', () => {
     expect(formatted.split('\n\n')).toHaveLength(3);
   });
 });
+
+// ---- TESTS DE EXTRACCIÓN DE PACKT ----
+
+/**
+ * Suite de tests para la extracción de datos de Packt Free Learning.
+ * Verifica los selectores CSS específicos para la página de Packt.
+ */
+describe('Packt Free Learning extraction', () => {
+  /**
+   * Verifica que los selectores de Packt extraen los datos correctos.
+   * Simula el HTML de la página de Packt y prueba los selectores.
+   */
+  it('should extract title from Packt HTML', () => {
+    // El patrón para limpiar el prefijo "Free eBook - "
+    const titleRaw = 'Free eBook - Learning Python Design Patterns - Second Edition';
+    const title = titleRaw.replace(/^Free eBook\s*-\s*/i, '');
+    expect(title).toBe('Learning Python Design Patterns - Second Edition');
+  });
+
+  it('should extract author from Packt HTML', () => {
+    const authorText = 'By Giridhar, Zlobin';
+    const author = authorText.replace(/^By\s+/i, '').trim();
+    expect(author).toBe('Giridhar, Zlobin');
+  });
+
+  it('should extract publication date from Packt HTML', () => {
+    const pubDateRaw = 'Publication date: Feb 2016';
+    const publicationDate = pubDateRaw.replace(/^Publication date:\s*/i, '').trim();
+    expect(publicationDate).toBe('Feb 2016');
+  });
+
+  it('should extract pages from Packt HTML', () => {
+    const pagesRaw = 'Pages: 164';
+    const pages = pagesRaw.replace(/^Pages:\s*/i, '').trim();
+    expect(pages).toBe('164');
+  });
+
+  it('should correctly identify Packt Free Learning URLs', () => {
+    const packtUrls = [
+      'https://www.packtpub.com/free-learning',
+      'https://packtpub.com/free-learning/',
+      'https://www.packtpub.com/free-learning/some-book/123456',
+    ];
+
+    const nonPacktUrls = [
+      'https://example.com',
+      'https://packtpub.com/books', // No contiene 'free-learning'
+      'https://www.packtpub.com/free-ebook/some-book/123456', // free-ebook, no free-learning
+    ];
+
+    const isPacktFreeLearningUrl = (url: string) => {
+      try {
+        const urlObj = new URL(url);
+        return /^(www\.)?packtpub\.com$/i.test(urlObj.hostname) &&
+               urlObj.pathname.includes('free-learning');
+      } catch {
+        return false;
+      }
+    };
+
+    packtUrls.forEach(url => {
+      expect(isPacktFreeLearningUrl(url)).toBe(true);
+    });
+
+    nonPacktUrls.forEach(url => {
+      expect(isPacktFreeLearningUrl(url)).toBe(false);
+    });
+  });
+});

@@ -9,6 +9,7 @@ Aplicación web que obtiene el título y subtítulo de una página web a partir 
 - Extrae título, descripción, imagen y autor de cualquier URL
 - **Soporte especial para Twitter/X** (tweets con texto, autor e imágenes)
 - **Soporte especial para Amazon** (libros, eBooks y productos) en 12 países
+- **Soporte especial para Packt Free Learning** (libro gratuito del día con fecha y páginas)
 - Selector de formato: WhatsApp (`*negrita*`) o Telegram (`**negrita**`)
 - Texto de salida con separadores visuales
 - Bookmarklet para compartir desde cualquier página
@@ -38,6 +39,15 @@ Extracción optimizada para productos y libros de Amazon en:
 - amazon.co.jp (Japón)
 - amazon.in (India)
 - amazon.com.au (Australia)
+
+### Packt Free Learning (soporte específico)
+Extracción de datos del libro gratuito del día en `packtpub.com/free-learning`:
+- Título del libro (sin prefijo "Free eBook - ")
+- Autores
+- Descripción del libro
+- Fecha de publicación
+- Número de páginas
+- Imagen de portada
 
 ## Requisitos
 

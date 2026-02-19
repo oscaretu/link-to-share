@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
           image: null,
           url: url, // Al menos devolvemos la URL original
           author: null,
+          publicationDate: null,
+          pages: null,
         }
       },
       { status: 422 } // Unprocessable Entity: la URL es válida pero no se pudo procesar

@@ -40,6 +40,8 @@ interface PreviewCardProps {
   image: string | null;
   url: string;
   author: string | null;
+  publicationDate?: string | null;
+  pages?: string | null;
   onEdit: (data: { title: string; description: string; url: string }) => void;
 }
 
@@ -66,6 +68,8 @@ export default function PreviewCard({
   image,
   url,
   author,
+  publicationDate,
+  pages,
   onEdit,
 }: PreviewCardProps) {
   // ---- ESTADOS DEL COMPONENTE ----
@@ -123,15 +127,18 @@ export default function PreviewCard({
    * 1. Título en negrita (formato según plataforma)
    * 2. Línea en blanco
    * 3. Descripción
-   * 4. Línea en blanco
-   * 5. URL
-   *
-   * Este formato es óptimo para WhatsApp y Telegram porque:
-   * - El título destaca visualmente con negrita
-   * - Las líneas en blanco mejoran la legibilidad
-   * - La URL al final permite que se genere preview automático
+   * 4. Línea en blanco (solo si hay detalles del libro)
+   * 5. Detalles del libro: Publicado: Feb 2016 • 164 páginas (si existen)
+   * 6. Línea en blanco
+   * 7. URL
    */
-  const formattedText = `${formatTitle(editTitle, format)}\n\n${editDescription}\n\n${editUrl}`;
+  const bookDetails = (publicationDate || pages)
+    ? `Publicado: ${publicationDate || 'N/A'}${pages ? ` • ${pages} páginas` : ''}`
+    : '';
+
+  const formattedText = bookDetails
+    ? `${formatTitle(editTitle, format)}\n\n${editDescription}\n\n${bookDetails}\n\n${editUrl}`
+    : `${formatTitle(editTitle, format)}\n\n${editDescription}\n\n${editUrl}`;
 
   /**
    * Handler para copiar el texto formateado al portapapeles.
@@ -294,6 +301,14 @@ export default function PreviewCard({
 
             {/* Descripción con límite de 3 líneas */}
             <p className="text-gray-600 text-sm line-clamp-3">{editDescription}</p>
+
+            {/* Detalles del libro (solo para Packt) */}
+            {(publicationDate || pages) && (
+              <p className="text-xs text-gray-500">
+                📅 Publicado: {publicationDate || 'N/A'}
+                {pages && ` • 📄 ${pages} páginas`}
+              </p>
+            )}
 
             {/* URL clickeable que abre en nueva pestaña */}
             <a
